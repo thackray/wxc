@@ -38,7 +38,7 @@ def station_headers(mos_file, station_id, model="GFS"):
     """
     lines = mos_file.readlines()
     for i, line in enumerate(lines):
-        if station_id in line:
+        if station_id in line.lower():
             # seek forward to find end of station data
             for i_end in xrange(i+1, i+30):
                 if "%s MOS GUIDANCE" % model in lines[i_end]: break
@@ -110,11 +110,17 @@ def get_NAM(station, years):
                 print "...resource not found. Skipping."
                 continue
 
-            ## Uncompress file
-            subprocess.call(["uncompress", full_fn])
         uncomp_fn = full_fn[:-2] # trim the ".Z"
-
-        f = open(uncomp_fn)
+       ## Uncompress file
+        if not os.path.exists(uncomp_fn):
+            if os.name == 'posix':
+                subprocess.call(["uncompress", full_fn])
+            elif os.name == 'nt':
+                #not working from the command line for windows
+                subprocess.call(["expand", full_fn, uncomp_fn], shell = True)
+        
+        #print uncomp_fn
+        f = open(uncomp_fn, 'rb')
 
         sh = station_headers(f, station, "NAM")
         for mos_lines in sh:
@@ -130,7 +136,7 @@ def get_NAM(station, years):
             new_f.close()
 
         f.close()
-        os.remove(uncomp_fn)
+        #os.remove(uncomp_fn)
 
 def get_GFS(station, years):    
     """Download GFS MOS output.
@@ -191,11 +197,16 @@ def get_GFS(station, years):
                     print "...resource not found. Skipping."
                     continue
 
-                ## Uncompress file
-                subprocess.call(["uncompress", full_fn])
             uncomp_fn = full_fn[:-2] # trim the ".Z"
+       ## Uncompress file
+            if not os.path.exists(uncomp_fn):
+                if os.name == 'posix':
+                    subprocess.call(["uncompress", full_fn])
+                elif os.name == 'nt':
+                    #not working from the command line for windows
+                    subprocess.call(["expand", full_fn, uncomp_fn], shell = True)
 
-            f = open(uncomp_fn)
+            f = open(uncomp_fn, 'rb')
 
             sh = station_headers(f, station, "GFS")
             for mos_lines in sh:
@@ -210,7 +221,7 @@ def get_GFS(station, years):
                 new_f.close()
 
             f.close()
-            os.remove(uncomp_fn)
+            #os.remove(uncomp_fn)
 
 def process_MOS(lines):
     """Process a block of MOS output.
